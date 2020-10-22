@@ -77,7 +77,63 @@ pub fn break_the_single_char_xor(raw: &[u8]) -> Vec<(u8, String, f64)> {
     candidates
 }
 
+/// Find the most suitable single character (u8) that,
+/// xor-ed to the given text produce a valid ASCII printable text
+/// statistically closed to english text.
+///
+/// # Errors
+/// - every character we try, produces bad string (not a valid UTF-8) when xor-ed
+/// - every character we try, produces non-printable ASCII symbols
+pub fn find_key_char(line: &[u8]) -> Result<u8, String> {
+    let candidates = break_the_single_char_xor(line);
+    if candidates.is_empty() {
+        return Err("No valid key char can be found".to_string());
+    }
+
+    eprintln!(
+        "Trying to decrypt the line {:?} with single character",
+        line
+    );
+
+    for (key, plain, score) in &candidates {
+        // unprintable non-whitespace symbol
+        if !is_printable_ascii(plain) {
+            continue;
+        }
+
+        eprintln!(
+            "The key is {}({:?}). Plaintext is: {:?} (score={})",
+            key, *key as char, plain, score
+        );
+
+        return Ok(*key);
+    }
+
+    Err("All the sequences has bad characters".to_string())
+}
+
 pub fn is_printable_ascii(text: &str) -> bool {
     text.chars()
         .all(|ch| ch.is_ascii_whitespace() || !ch.is_ascii_control())
+}
+
+pub fn hamming(lhs: impl AsRef<[u8]>, rhs: impl AsRef<[u8]>) -> u32 {
+    lhs.as_ref()
+        .iter()
+        .zip(rhs.as_ref())
+        .map(|(l, r)| (l ^ r).count_ones())
+        .sum()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sanity() {
+        let a = "this is a test";
+        let b = "wokka wokka!!!";
+
+        assert_eq!(hamming(a, b), 37);
+    }
 }

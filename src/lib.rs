@@ -50,12 +50,10 @@ fn english_text_score(text: &str) -> f64 {
         .sum()
 }
 
-pub fn break_the_single_char_xor(cipher_text: &str) -> Vec<(u8, String, f64)> {
-    let raw = parse_hex(cipher_text);
-
+pub fn break_the_single_char_xor(raw: &[u8]) -> Vec<(u8, String, f64)> {
     eprintln!("{:x?}", raw);
 
-    let keys_space = 0..=255;
+    let keys_space = 0..=u8::MAX;
     let mut candidates: Vec<_> = keys_space
         .filter_map(|key| {
             let full_key = iter::repeat(key);
@@ -70,11 +68,16 @@ pub fn break_the_single_char_xor(cipher_text: &str) -> Vec<(u8, String, f64)> {
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     candidates.sort_unstable_by_key(|(_key, _plain, score)| (score * 1000.0) as u64);
 
-    if candidates.len() >= 10 {
-        for (key, plain, score) in &candidates[..10] {
-            eprintln!("{} ({}). {} -> {}", key, *key as char, plain, score);
-        }
+    // print the top candidates for debug
+    let debug_top_candidates = candidates.len().min(10);
+    for (key, plain, score) in &candidates[..debug_top_candidates] {
+        eprintln!("{} ({}). {} -> {}", key, *key as char, plain, score);
     }
 
     candidates
+}
+
+pub fn is_printable_ascii(text: &str) -> bool {
+    text.chars()
+        .all(|ch| ch.is_ascii_whitespace() || !ch.is_ascii_control())
 }

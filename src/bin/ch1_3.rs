@@ -1,15 +1,11 @@
-use pals::break_the_single_char_xor;
+use pals::{break_the_single_char_xor, is_printable_ascii, parse_hex};
 
 const ENCODED: &str = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736";
 
 fn main() {
-    let candidates = break_the_single_char_xor(ENCODED);
+    let candidates = break_the_single_char_xor(&parse_hex(ENCODED));
     for (key, plain, score) in &candidates[..2] {
-        // unprintable non-whitespace symbol
-        if plain
-            .chars()
-            .any(|ch| ch.is_ascii_control() && !ch.is_ascii_whitespace())
-        {
+        if !is_printable_ascii(plain) {
             continue;
         }
 

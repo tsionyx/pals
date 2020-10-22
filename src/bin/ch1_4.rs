@@ -1,6 +1,8 @@
 use std::{env, fs};
 
-use pals::break_the_single_char_xor;
+use pals::{break_the_single_char_xor, is_printable_ascii, parse_hex};
+
+const CANDIDATES_TO_TRY: usize = 2;
 
 fn main() {
     let wd = env::current_dir().unwrap();
@@ -8,18 +10,14 @@ fn main() {
     let data = fs::read_to_string(data_f).unwrap();
 
     for (i, line) in data.lines().enumerate() {
-        let candidates = break_the_single_char_xor(line);
+        let candidates = break_the_single_char_xor(&parse_hex(line));
         if candidates.is_empty() {
             continue;
         }
 
-        println!("{}. {}", i, line);
-        for (key, plain, score) in &candidates[..2] {
-            // unprintable non-whitespace symbol
-            if plain
-                .chars()
-                .any(|ch| ch.is_ascii_control() && !ch.is_ascii_whitespace())
-            {
+        eprintln!("{}. {}", i, line);
+        for (key, plain, score) in &candidates[..CANDIDATES_TO_TRY] {
+            if !is_printable_ascii(plain) {
                 continue;
             }
 

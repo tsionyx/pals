@@ -2,6 +2,8 @@
 
 use itertools::Itertools;
 
+pub mod freq;
+
 /// <https://codereview.stackexchange.com/a/201699>
 pub fn parse_hex(hex_asm: &str) -> Vec<u8> {
     let hex_bytes = hex_asm

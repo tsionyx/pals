@@ -1,4 +1,5 @@
 #!/bin/sh
 
-wget -nc https://cryptopals.com/static/challenge-data/4.txt
-wget -nc https://cryptopals.com/static/challenge-data/6.txt
+for challenge in 4 6 7; do
+  wget -nc https://cryptopals.com/static/challenge-data/$challenge.txt
+done

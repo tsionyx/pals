@@ -128,7 +128,7 @@ impl BytesCryptoExt for Vec<u8> {
     fn guess_the_single_char_xor_key(&self) -> Vec<(u8, String, u64)> {
         // eprintln!("{:x?}", self);
 
-        let keys_space = 0..=u8::MAX;
+        let keys_space = 0..=std::u8::MAX;
         let mut candidates: Vec<_> = keys_space
             .filter_map(|key| {
                 let raw = self.xor(iter::once(key));

@@ -1,6 +1,6 @@
 use std::{env, fs, io::Read};
 
-use pals::{xor, HexDisplay};
+use pals::{HexDisplay, StreamCipher};
 
 const PLAIN: &str = r#"Burning 'em, if you ain't quick and nimble
 I go crazy when I hear a cymbal"#;
@@ -8,8 +8,7 @@ I go crazy when I hear a cymbal"#;
 const KEY: &str = "ICE";
 
 fn main() {
-    let key = KEY.bytes().cycle();
-    let ciphered: Vec<_> = xor!(PLAIN.bytes(), key.clone()).collect();
+    let ciphered = PLAIN.xor(KEY.bytes());
 
     println!("{}", ciphered.as_hex());
 
@@ -28,12 +27,12 @@ fn main() {
         let mut data = Vec::new();
         let size_of_data = std::io::stdin().read_to_end(&mut data).unwrap();
         eprintln!("Read {} bytes from stdin", size_of_data);
-        encrypt_xor(&data, key, &out_file)
+        encrypt_xor(&data, KEY, &out_file)
     }
 }
 
-fn encrypt_xor(data: &[u8], key: impl Iterator<Item = u8>, out_file: &str) {
-    let ciphered: Vec<_> = xor!(data.iter(), key).collect();
+fn encrypt_xor(data: &[u8], key: &str, out_file: &str) {
+    let ciphered = data.xor(key.bytes());
     eprintln!("Saving the ciphered bytes into {:?}...", out_file);
     fs::write(out_file, ciphered).unwrap();
 }

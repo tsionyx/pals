@@ -1,6 +1,6 @@
 use std::{env, fs};
 
-use pals::{hamming, xor, BytesCryptoExt};
+use pals::{hamming, BytesCryptoExt, StreamCipher};
 
 fn main() {
     let wd = env::current_dir().unwrap();
@@ -30,7 +30,7 @@ fn decrypt_xor(data: &[u8]) {
                 println!("Found a key: {:?} ({:?})", key, key_str);
                 println!("The text decrypted with this key");
                 println!("=================================");
-                let broken = xor!(data.iter(), key.iter().cycle()).collect();
+                let broken = data.xor(key.into_iter());
                 let data = String::from_utf8(broken).unwrap();
                 println!("{}", data);
                 println!("=================================");

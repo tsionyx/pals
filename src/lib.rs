@@ -6,16 +6,39 @@ use itertools::Itertools;
 
 pub mod freq;
 
-// pub fn xor2<'a, I1, I2, T>(a: I1, b: I2) -> impl Iterator<Item=T>
-//     where I1: Iterator<Item=&'a T>, I2: IntoIterator<Item=T>, T: 'a + std::ops::BitXor<Output=T> {
-//     a.zip(b).map(|(x, y)| x ^ y)
-// }
+pub trait StreamCipher {
+    fn xor<I>(&self, key: I) -> Vec<u8>
+    where
+        I: Iterator<Item = u8> + Clone;
+}
 
-#[macro_export]
-macro_rules! xor {
-    ($a:expr, $b:expr) => {
-        $a.zip($b).map(|(x, y)| x ^ y)
-    };
+fn xor_internal<'a, T, I>(plain: T, key: I) -> Vec<u8>
+where
+    T: Iterator<Item = &'a u8>,
+    I: Iterator<Item = u8> + Clone,
+{
+    plain
+        .zip(key.cycle())
+        .map(|(plain_byte, key_byte)| plain_byte ^ key_byte)
+        .collect()
+}
+
+impl StreamCipher for str {
+    fn xor<I>(&self, key: I) -> Vec<u8>
+    where
+        I: Iterator<Item = u8> + Clone,
+    {
+        self.as_bytes().xor(key)
+    }
+}
+
+impl StreamCipher for [u8] {
+    fn xor<I>(&self, key: I) -> Vec<u8>
+    where
+        I: Iterator<Item = u8> + Clone,
+    {
+        xor_internal(self.iter(), key)
+    }
 }
 
 pub trait StrCryptoExt {
@@ -94,8 +117,7 @@ impl BytesCryptoExt for Vec<u8> {
         let keys_space = 0..=u8::MAX;
         let mut candidates: Vec<_> = keys_space
             .filter_map(|key| {
-                let full_key = iter::repeat(key);
-                let raw = xor!(self.iter(), full_key).collect();
+                let raw = self.xor(iter::once(key));
                 String::from_utf8(raw).ok().map(|plain| {
                     let score = english_text_score(&plain);
                     (key, plain, score)

@@ -19,11 +19,13 @@ fn main() {
         let same_results = try_decrypt(&text, &cipher);
 
         if let Some(true) = same_results {
+            let hex = text.as_hex();
             println!(
                 "{}-th Line {:?} has been ciphered in ECB mode for sure",
                 i,
                 text.as_hex()
             );
+            assert_result(&hex, i);
         }
     }
 }
@@ -46,4 +48,9 @@ fn try_decrypt(data: &[u8], cipher: &Aes128) -> Option<bool> {
     }
 
     None
+}
+
+fn assert_result(result: &str, line_number: usize) {
+    assert!(result.starts_with("d880619740"));
+    assert_eq!(line_number, 132);
 }

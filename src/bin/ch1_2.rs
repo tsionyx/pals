@@ -10,5 +10,13 @@ fn main() {
     let data = raw1.xor(raw2.into_iter());
     eprintln!("{:x?}", data);
 
-    println!("{}", data.as_hex())
+    let hex = data.as_hex();
+    println!("{}", hex);
+
+    assert_result(&hex);
+}
+
+fn assert_result(result: &str) {
+    assert!(result.starts_with("7468"));
+    assert!(result.ends_with("c6179"));
 }

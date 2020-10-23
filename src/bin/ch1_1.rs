@@ -9,5 +9,13 @@ fn main() {
     let raw = HEX_REPR.parse_hex();
     eprintln!("Raw bytes representation: {:?}", &raw);
 
-    println!("{}", encode(&raw));
+    let encoded = encode(&raw);
+    println!("{}", encoded);
+
+    assert_result(&encoded)
+}
+
+fn assert_result(result: &str) {
+    assert!(result.starts_with("SSdt"));
+    assert!(result.ends_with("2hyb29t"));
 }

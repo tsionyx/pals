@@ -10,7 +10,9 @@ const KEY: &str = "ICE";
 fn main() {
     let ciphered = PLAIN.xor(KEY.bytes());
 
-    println!("{}", ciphered.as_hex());
+    let hex = ciphered.as_hex();
+    println!("{}", hex);
+    assert_result(&hex);
 
     let mut args = env::args();
     // skip the program name
@@ -24,8 +26,9 @@ fn main() {
     }
 }
 
-fn match_expected(text: &str) -> bool {
-    text.starts_with("b3637272") && text.trim_end().ends_with("2e27282f")
+fn assert_result(result: &str) {
+    assert!(result.starts_with("b3637272"));
+    assert!(result.trim_end().ends_with("2e27282f"));
 }
 
 fn encrypt_xor(data: &[u8], key: &str, out_file: &str) {
@@ -84,19 +87,19 @@ mod tests {
             vec!["data.enc"],
             Some("target/debug/ch1_5"),
         );
-        assert!(match_expected(&enc_output));
+        assert_result(&enc_output);
         let enc_sum = md5sum("data.enc");
         assert_ne!(initial_sum, enc_sum);
 
         let dec_output = run_command("target/debug/ch1_5", vec!["data.orig"], Some("data.enc"));
-        assert!(match_expected(&dec_output));
+        assert_result(&dec_output);
         let dec_sum = md5sum("data.orig");
         assert_eq!(initial_sum, dec_sum);
 
         run_command("chmod", vec!["+x", "data.orig"], None);
 
         let restored_binary_output = run_command("./data.orig", vec![], None);
-        assert!(match_expected(&restored_binary_output));
+        assert_result(&restored_binary_output);
 
         fs::remove_file("data.enc").unwrap();
         fs::remove_file("data.orig").unwrap();

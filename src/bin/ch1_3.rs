@@ -13,5 +13,12 @@ fn main() {
             "The key is {}({:?}). Plaintext is: {:?} (score={})",
             key, *key as char, plain, score
         );
+
+        assert_result(plain, *key as char);
     }
+}
+
+fn assert_result(result: &str, key: char) {
+    assert_eq!(result, "Cooking MC\'s like a pound of bacon");
+    assert_eq!(key, 'X');
 }

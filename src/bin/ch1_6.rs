@@ -34,6 +34,7 @@ fn decrypt_xor(data: &[u8]) {
                 let data = String::from_utf8(broken).unwrap();
                 println!("{}", data);
                 println!("=================================");
+                assert_result(&data, &key_str);
             }
             Err(err) => {
                 println!("The key size {} is bad: {:?}", key_size, err);
@@ -88,4 +89,10 @@ fn key_size_distance(data: &[u8], key_size: usize) -> u32 {
 
     // normalized
     total_distance * 1000 / key_size as u32
+}
+
+fn assert_result(result: &str, key: &str) {
+    assert_eq!(key, "Terminator X: Bring the noise");
+    assert!(result.starts_with("I'm back and I'm ringin' the bell"));
+    assert!(result.trim_end().ends_with("Play that funky music"));
 }

@@ -15,7 +15,7 @@ fn main() {
             continue;
         }
 
-        eprintln!("{}. {}", i, line);
+        eprintln!("{}-th LINE: {:?}", i, line);
         for (key, plain, score) in &candidates[..CANDIDATES_TO_TRY] {
             if !plain.is_printable_ascii() {
                 continue;
@@ -25,6 +25,13 @@ fn main() {
                 "The key is {}({:?}). Plaintext is: {:?} (score={})",
                 key, *key as char, plain, score
             );
+
+            assert_result(plain, *key as char);
         }
     }
+}
+
+fn assert_result(result: &str, key: char) {
+    assert_eq!(result, "Now that the party is jumping\n");
+    assert_eq!(key, '5');
 }

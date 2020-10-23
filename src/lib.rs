@@ -6,22 +6,6 @@ use itertools::Itertools;
 
 pub mod freq;
 
-/// <https://codereview.stackexchange.com/a/201699>
-pub fn parse_hex(hex_asm: &str) -> Vec<u8> {
-    let hex_bytes = hex_asm
-        .as_bytes()
-        .iter()
-        .filter_map(|b| match b {
-            b'0'..=b'9' => Some(b - b'0'),
-            b'a'..=b'f' => Some(b - b'a' + 10),
-            b'A'..=b'F' => Some(b - b'A' + 10),
-            _ => None,
-        })
-        .fuse();
-
-    hex_bytes.tuples().map(|(h, l)| h << 4 | l).collect()
-}
-
 // pub fn xor2<'a, I1, I2, T>(a: I1, b: I2) -> impl Iterator<Item=T>
 //     where I1: Iterator<Item=&'a T>, I2: IntoIterator<Item=T>, T: 'a + std::ops::BitXor<Output=T> {
 //     a.zip(b).map(|(x, y)| x ^ y)
@@ -32,6 +16,34 @@ macro_rules! xor {
     ($a:expr, $b:expr) => {
         $a.zip($b).map(|(x, y)| x ^ y)
     };
+}
+
+pub trait StrCryptoExt {
+    fn parse_hex(&self) -> Vec<u8>;
+    fn is_printable_ascii(&self) -> bool;
+}
+
+impl StrCryptoExt for str {
+    /// <https://codereview.stackexchange.com/a/201699>
+    fn parse_hex(&self) -> Vec<u8> {
+        let hex_bytes = self
+            .as_bytes()
+            .iter()
+            .filter_map(|b| match b {
+                b'0'..=b'9' => Some(b - b'0'),
+                b'a'..=b'f' => Some(b - b'a' + 10),
+                b'A'..=b'F' => Some(b - b'A' + 10),
+                _ => None,
+            })
+            .fuse();
+
+        hex_bytes.tuples().map(|(h, l)| h << 4 | l).collect()
+    }
+
+    fn is_printable_ascii(&self) -> bool {
+        self.chars()
+            .all(|ch| ch.is_ascii_whitespace() || !ch.is_ascii_control())
+    }
 }
 
 /// Higher score signifies the text is going further away from
@@ -50,73 +62,6 @@ fn english_text_score(text: &str) -> f64 {
         .sum()
 }
 
-pub fn break_the_single_char_xor(raw: &[u8]) -> Vec<(u8, String, f64)> {
-    eprintln!("{:x?}", raw);
-
-    let keys_space = 0..=u8::MAX;
-    let mut candidates: Vec<_> = keys_space
-        .filter_map(|key| {
-            let full_key = iter::repeat(key);
-            let raw = xor!(raw.iter(), full_key).collect();
-            String::from_utf8(raw).ok().map(|plain| {
-                let score = english_text_score(&plain);
-                (key, plain, score)
-            })
-        })
-        .collect();
-
-    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-    candidates.sort_unstable_by_key(|(_key, _plain, score)| (score * 1000.0) as u64);
-
-    // print the top candidates for debug
-    let debug_top_candidates = candidates.len().min(10);
-    for (key, plain, score) in &candidates[..debug_top_candidates] {
-        eprintln!("{} ({}). {} -> {}", key, *key as char, plain, score);
-    }
-
-    candidates
-}
-
-/// Find the most suitable single character (u8) that,
-/// xor-ed to the given text produce a valid ASCII printable text
-/// statistically closed to english text.
-///
-/// # Errors
-/// - every character we try, produces bad string (not a valid UTF-8) when xor-ed
-/// - every character we try, produces non-printable ASCII symbols
-pub fn find_key_char(line: &[u8]) -> Result<u8, String> {
-    let candidates = break_the_single_char_xor(line);
-    if candidates.is_empty() {
-        return Err("No valid key char can be found".to_string());
-    }
-
-    eprintln!(
-        "Trying to decrypt the line {:?} with single character",
-        line
-    );
-
-    for (key, plain, score) in &candidates {
-        // unprintable non-whitespace symbol
-        if !is_printable_ascii(plain) {
-            continue;
-        }
-
-        eprintln!(
-            "The key is {}({:?}). Plaintext is: {:?} (score={})",
-            key, *key as char, plain, score
-        );
-
-        return Ok(*key);
-    }
-
-    Err("All the sequences has bad characters".to_string())
-}
-
-pub fn is_printable_ascii(text: &str) -> bool {
-    text.chars()
-        .all(|ch| ch.is_ascii_whitespace() || !ch.is_ascii_control())
-}
-
 pub trait HexDisplay {
     fn as_hex(&self) -> String;
 }
@@ -124,6 +69,85 @@ pub trait HexDisplay {
 impl HexDisplay for [u8] {
     fn as_hex(&self) -> String {
         self.iter().map(|x| format!("{:x}", x)).collect()
+    }
+}
+
+pub trait BytesCryptoExt {
+    fn guess_the_single_char_xor_key(&self) -> Vec<(u8, String, f64)>;
+
+    /// Find the most suitable single character (u8) that,
+    /// xor-ed to the given text produce a valid ASCII printable text
+    /// statistically closed to english text.
+    ///
+    /// # Errors
+    /// - every character we try, produces bad string (not a valid UTF-8) when xor-ed
+    /// - every character we try, produces non-printable ASCII symbols
+    fn find_key_char(&self) -> Result<u8, String>;
+}
+
+impl BytesCryptoExt for Vec<u8> {
+    #![allow(clippy::use_self)]
+
+    fn guess_the_single_char_xor_key(&self) -> Vec<(u8, String, f64)> {
+        eprintln!("{:x?}", self);
+
+        let keys_space = 0..=u8::MAX;
+        let mut candidates: Vec<_> = keys_space
+            .filter_map(|key| {
+                let full_key = iter::repeat(key);
+                let raw = xor!(self.iter(), full_key).collect();
+                String::from_utf8(raw).ok().map(|plain| {
+                    let score = english_text_score(&plain);
+                    (key, plain, score)
+                })
+            })
+            .collect();
+
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        candidates.sort_unstable_by_key(|(_key, _plain, score)| (score * 1000.0) as u64);
+
+        // print the top candidates for debug
+        let debug_top_candidates = candidates.len().min(10);
+        for (key, plain, score) in &candidates[..debug_top_candidates] {
+            eprintln!("{} ({}). {} -> {}", key, *key as char, plain, score);
+        }
+
+        candidates
+    }
+
+    /// Find the most suitable single character (u8) that,
+    /// xor-ed to the given text produce a valid ASCII printable text
+    /// statistically closed to english text.
+    ///
+    /// # Errors
+    /// - every character we try, produces bad string (not a valid UTF-8) when xor-ed
+    /// - every character we try, produces non-printable ASCII symbols
+    fn find_key_char(&self) -> Result<u8, String> {
+        let candidates = self.guess_the_single_char_xor_key();
+        if candidates.is_empty() {
+            return Err("No valid key char can be found".to_string());
+        }
+
+        eprintln!(
+            "Trying to decrypt the line {:?} with single character",
+            self
+        );
+
+        for (key, plain, score) in &candidates {
+            // unprintable non-whitespace symbol
+            if !plain.is_printable_ascii() {
+                continue;
+            }
+
+            eprintln!(
+                "The key is {}({:?}). Plaintext is: {:?} (score={})",
+                key, *key as char, plain, score
+            );
+
+            return Ok(*key);
+        }
+
+        Err("All the sequences has bad characters".to_string())
     }
 }
 

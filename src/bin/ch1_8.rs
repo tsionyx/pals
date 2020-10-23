@@ -2,7 +2,7 @@ use std::{collections::HashMap, env, fs};
 
 use aes::{cipher::generic_array::GenericArray, Aes128, BlockCipher, NewBlockCipher};
 
-use pals::{parse_hex, HexDisplay};
+use pals::{HexDisplay, StrCryptoExt};
 
 const RANDOM_KEY: &str = "YELLOW SUBMARINE";
 
@@ -10,7 +10,7 @@ fn main() {
     let wd = env::current_dir().unwrap();
     let data_f = wd.join("data").join("8.txt");
     let hex = fs::read_to_string(data_f).unwrap();
-    let data = hex.lines().map(parse_hex);
+    let data = hex.lines().map(StrCryptoExt::parse_hex);
 
     let key = GenericArray::from_slice(RANDOM_KEY.as_bytes());
     let cipher = Aes128::new(key);

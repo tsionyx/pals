@@ -1,11 +1,11 @@
-use pals::{break_the_single_char_xor, is_printable_ascii, parse_hex};
+use pals::{BytesCryptoExt, StrCryptoExt};
 
 const ENCODED: &str = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736";
 
 fn main() {
-    let candidates = break_the_single_char_xor(&parse_hex(ENCODED));
+    let candidates = ENCODED.parse_hex().guess_the_single_char_xor_key();
     for (key, plain, score) in &candidates[..2] {
-        if !is_printable_ascii(plain) {
+        if !plain.is_printable_ascii() {
             continue;
         }
 

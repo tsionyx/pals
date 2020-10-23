@@ -1,6 +1,6 @@
 use std::{env, fs};
 
-use pals::{find_key_char, hamming, xor};
+use pals::{hamming, xor, BytesCryptoExt};
 
 fn main() {
     let wd = env::current_dir().unwrap();
@@ -47,7 +47,7 @@ fn find_best_key(data: &[u8], key_size: usize) -> Result<Vec<u8>, String> {
         (0..key_size).map(|index| data.iter().skip(index).step_by(key_size).cloned().collect());
 
     transposed_blocks
-        .map(|single_char_block: Vec<u8>| find_key_char(&single_char_block))
+        .map(|single_char_block: Vec<u8>| single_char_block.find_key_char())
         .collect()
 }
 

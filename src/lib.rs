@@ -117,6 +117,16 @@ pub fn is_printable_ascii(text: &str) -> bool {
         .all(|ch| ch.is_ascii_whitespace() || !ch.is_ascii_control())
 }
 
+pub trait HexDisplay {
+    fn as_hex(&self) -> String;
+}
+
+impl HexDisplay for [u8] {
+    fn as_hex(&self) -> String {
+        self.iter().map(|x| format!("{:x}", x)).collect()
+    }
+}
+
 pub fn hamming(lhs: impl AsRef<[u8]>, rhs: impl AsRef<[u8]>) -> u32 {
     lhs.as_ref()
         .iter()

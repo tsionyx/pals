@@ -2,7 +2,7 @@ use std::{collections::HashMap, env, fs};
 
 use aes::{cipher::generic_array::GenericArray, Aes128, BlockCipher, NewBlockCipher};
 
-use pals::parse_hex;
+use pals::{parse_hex, HexDisplay};
 
 const RANDOM_KEY: &str = "YELLOW SUBMARINE";
 
@@ -19,10 +19,10 @@ fn main() {
         let same_results = try_decrypt(&text, &cipher);
 
         if let Some(true) = same_results {
-            let as_hex: String = text.iter().map(|x| format!("{:x}", x)).collect();
             println!(
                 "{}-th Line {:?} has been ciphered in ECB mode for sure",
-                i, as_hex
+                i,
+                text.as_hex()
             );
         }
     }
@@ -38,8 +38,7 @@ fn try_decrypt(data: &[u8], cipher: &Aes128) -> Option<bool> {
 
         let deciphered = block.to_vec();
         if let Some(before) = processed_pairs.get(&ciphered) {
-            let as_hex: String = ciphered.iter().map(|x| format!("{:x}", x)).collect();
-            eprintln!("{}.{:?}", block_number, as_hex);
+            eprintln!("{}.{:?}", block_number, ciphered.as_hex());
             return Some(before == &deciphered);
         }
 

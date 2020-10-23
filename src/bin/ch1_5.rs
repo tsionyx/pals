@@ -1,6 +1,6 @@
 use std::{env, fs, io::Read};
 
-use pals::xor;
+use pals::{xor, HexDisplay};
 
 const PLAIN: &str = r#"Burning 'em, if you ain't quick and nimble
 I go crazy when I hear a cymbal"#;
@@ -11,8 +11,7 @@ fn main() {
     let key = KEY.bytes().cycle();
     let ciphered: Vec<_> = xor!(PLAIN.bytes(), key.clone()).collect();
 
-    let x: String = ciphered.into_iter().map(|x| format!("{:x}", x)).collect();
-    println!("{}", x);
+    println!("{}", ciphered.as_hex());
 
     let mut args = env::args();
     // skip the program name

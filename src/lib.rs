@@ -71,10 +71,16 @@ impl StrCryptoExt for str {
 
 /// Higher score signifies the text is going further away from
 /// the standard english text (in terms of letter's frequencies
-fn english_text_score(text: &str) -> f64 {
+fn english_text_score(text: &str) -> u64 {
+    #![allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_precision_loss,
+        clippy::cast_sign_loss
+    )]
+
     let standard = freq::eng_map();
     let real = freq::letters_frequencies(text);
-    standard
+    let score: f64 = standard
         .into_iter()
         .map(|(ch, std_freq)| {
             real.get(&ch).map_or(1.0, |freq| {
@@ -82,7 +88,15 @@ fn english_text_score(text: &str) -> f64 {
                 (std_freq - freq).abs()
             })
         })
-        .sum()
+        .sum();
+
+    let punctuation = text.chars().filter(char::is_ascii_punctuation).count();
+
+    // every punctuation sign adds a bit to the artificiality of the text
+    let punctuation_score = (punctuation as f64) * 0.2;
+    let score = score + punctuation_score;
+
+    (score * 1000.0) as u64
 }
 
 pub trait HexDisplay {
@@ -96,7 +110,7 @@ impl HexDisplay for [u8] {
 }
 
 pub trait BytesCryptoExt {
-    fn guess_the_single_char_xor_key(&self) -> Vec<(u8, String, f64)>;
+    fn guess_the_single_char_xor_key(&self) -> Vec<(u8, String, u64)>;
 
     /// Find the most suitable single character (u8) that,
     /// xor-ed to the given text produce a valid ASCII printable text
@@ -111,8 +125,8 @@ pub trait BytesCryptoExt {
 impl BytesCryptoExt for Vec<u8> {
     #![allow(clippy::use_self)]
 
-    fn guess_the_single_char_xor_key(&self) -> Vec<(u8, String, f64)> {
-        eprintln!("{:x?}", self);
+    fn guess_the_single_char_xor_key(&self) -> Vec<(u8, String, u64)> {
+        // eprintln!("{:x?}", self);
 
         let keys_space = 0..=u8::MAX;
         let mut candidates: Vec<_> = keys_space
@@ -125,8 +139,7 @@ impl BytesCryptoExt for Vec<u8> {
             })
             .collect();
 
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-        candidates.sort_unstable_by_key(|(_key, _plain, score)| (score * 1000.0) as u64);
+        candidates.sort_unstable_by_key(|(_key, _plain, score)| *score);
 
         // print the top candidates for debug
         let debug_top_candidates = candidates.len().min(10);

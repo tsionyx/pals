@@ -120,6 +120,8 @@ pub trait BytesCryptoExt {
     /// - every character we try, produces bad string (not a valid UTF-8) when xor-ed
     /// - every character we try, produces non-printable ASCII symbols
     fn find_key_char(&self) -> Result<u8, String>;
+
+    fn pad_pkcs7(&mut self, block_size: u8);
 }
 
 impl BytesCryptoExt for Vec<u8> {
@@ -184,6 +186,19 @@ impl BytesCryptoExt for Vec<u8> {
 
         Err("All the sequences has bad characters".to_string())
     }
+
+    fn pad_pkcs7(&mut self, block_size: u8) {
+        if block_size < 2 {
+            return;
+        }
+
+        let block_size = block_size as usize;
+        let to_pad = block_size - self.len() % block_size;
+
+        #[allow(clippy::cast_possible_truncation)]
+        let padding = iter::repeat(to_pad as u8).take(to_pad);
+        self.extend(padding);
+    }
 }
 
 pub fn hamming(lhs: impl AsRef<[u8]>, rhs: impl AsRef<[u8]>) -> u32 {
@@ -229,5 +244,29 @@ mod tests {
         let b = "wokka wokka!!!";
 
         assert_eq!(hamming(a, b), 37);
+    }
+
+    #[test]
+    fn pad_empty() {
+        let mut v = Vec::<u8>::new();
+        v.pad_pkcs7(5);
+
+        assert_eq!(v, vec![5; 5]);
+    }
+
+    #[test]
+    fn pad_to_block() {
+        let mut v = vec![5_u8, 32, 16, 0, 4];
+        v.pad_pkcs7(6);
+
+        assert_eq!(v, vec![5, 32, 16, 0, 4, 1]);
+    }
+
+    #[test]
+    fn padding_is_mandarory() {
+        let mut v = vec![5_u8, 32, 16, 0, 4, 1];
+        v.pad_pkcs7(6);
+
+        assert_eq!(v, vec![5, 32, 16, 0, 4, 1, 6, 6, 6, 6, 6, 6]);
     }
 }

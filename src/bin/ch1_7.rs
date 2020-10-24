@@ -1,4 +1,4 @@
-use aes::{cipher::generic_array::GenericArray, Aes128, BlockCipher, NewBlockCipher};
+use pals::aes_cypher;
 use std::{env, fs};
 
 const KEY: &str = "YELLOW SUBMARINE";
@@ -12,15 +12,10 @@ fn main() {
     let base64_ed = base64_ed.replace('\n', "");
     let data = base64::decode(base64_ed).unwrap();
 
-    let key = GenericArray::from_slice(KEY.as_bytes());
-    let cipher = Aes128::new(key);
-
     let mut full_str = Vec::new();
 
-    for block in data.chunks(16) {
-        let mut block = GenericArray::clone_from_slice(block);
-        cipher.decrypt_block(&mut block);
-        let block_dec = String::from_utf8(block.to_vec()).unwrap();
+    for block in aes_cypher::decrypt(&data, KEY.as_bytes()) {
+        let block_dec = String::from_utf8(block).unwrap();
         print!("{}", block_dec);
         full_str.push(block_dec);
     }

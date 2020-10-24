@@ -194,6 +194,31 @@ pub fn hamming(lhs: impl AsRef<[u8]>, rhs: impl AsRef<[u8]>) -> u32 {
         .sum()
 }
 
+pub mod aes_cypher {
+    use aes::{cipher::generic_array::GenericArray, Aes128, BlockCipher, NewBlockCipher};
+
+    macro_rules! enc_dec {
+        ($func_name:ident, $direction:ident) => {
+            pub fn $func_name<'a, 'b>(
+                data: &'a [u8],
+                key: &'b [u8],
+            ) -> impl Iterator<Item = Vec<u8>> + 'a {
+                let key = GenericArray::from_slice(key);
+                let cipher = Aes128::new(key);
+
+                data.chunks(16).map(move |block| {
+                    let mut block = GenericArray::clone_from_slice(block);
+                    cipher.$direction(&mut block);
+                    block.to_vec()
+                })
+            }
+        };
+    }
+
+    enc_dec!(encrypt, encrypt_block);
+    enc_dec!(decrypt, decrypt_block);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

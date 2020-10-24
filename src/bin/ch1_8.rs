@@ -1,8 +1,6 @@
 use std::{collections::HashMap, env, fs};
 
-use aes::{cipher::generic_array::GenericArray, Aes128, BlockCipher, NewBlockCipher};
-
-use pals::{HexDisplay, StrCryptoExt};
+use pals::{aes_cypher, HexDisplay, StrCryptoExt};
 
 const RANDOM_KEY: &str = "YELLOW SUBMARINE";
 
@@ -12,11 +10,8 @@ fn main() {
     let hex = fs::read_to_string(data_f).unwrap();
     let data = hex.lines().map(StrCryptoExt::parse_hex);
 
-    let key = GenericArray::from_slice(RANDOM_KEY.as_bytes());
-    let cipher = Aes128::new(key);
-
     for (i, text) in data.enumerate() {
-        let same_results = try_decrypt(&text, &cipher);
+        let same_results = try_decrypt(&text, RANDOM_KEY.as_bytes());
 
         if let Some(true) = same_results {
             let hex = text.as_hex();
@@ -30,15 +25,14 @@ fn main() {
     }
 }
 
-fn try_decrypt(data: &[u8], cipher: &Aes128) -> Option<bool> {
+fn try_decrypt(data: &[u8], key: &[u8]) -> Option<bool> {
     let mut processed_pairs = HashMap::new();
 
-    for (block_number, block) in data.chunks(16).enumerate() {
-        let ciphered = block.to_vec();
-        let mut block = GenericArray::clone_from_slice(block);
-        cipher.decrypt_block(&mut block);
-
-        let deciphered = block.to_vec();
+    for (block_number, (ciphered, deciphered)) in data
+        .chunks(16)
+        .zip(aes_cypher::decrypt(data, key))
+        .enumerate()
+    {
         if let Some(before) = processed_pairs.get(&ciphered) {
             eprintln!("{}.{:?}", block_number, ciphered.as_hex());
             return Some(before == &deciphered);

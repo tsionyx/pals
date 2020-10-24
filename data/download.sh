@@ -1,5 +1,5 @@
 #!/bin/sh
 
-for challenge in 4 6 7 8; do
+for challenge in 4 6 7 8 10; do
   wget -nc https://cryptopals.com/static/challenge-data/$challenge.txt
 done

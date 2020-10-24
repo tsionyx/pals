@@ -10,17 +10,10 @@ pub trait StreamCipher {
     fn xor<I>(&self, key: I) -> Vec<u8>
     where
         I: Iterator<Item = u8> + Clone;
-}
 
-fn xor_internal<'a, T, I>(plain: T, key: I) -> Vec<u8>
-where
-    T: Iterator<Item = &'a u8>,
-    I: Iterator<Item = u8> + Clone,
-{
-    plain
-        .zip(key.cycle())
-        .map(|(plain_byte, key_byte)| plain_byte ^ key_byte)
-        .collect()
+    fn xor_ref<'a, I>(&self, key: I) -> Vec<u8>
+    where
+        I: Iterator<Item = &'a u8> + Clone;
 }
 
 impl StreamCipher for str {
@@ -30,6 +23,13 @@ impl StreamCipher for str {
     {
         self.as_bytes().xor(key)
     }
+
+    fn xor_ref<'a, I>(&self, key: I) -> Vec<u8>
+    where
+        I: Iterator<Item = &'a u8> + Clone,
+    {
+        self.as_bytes().xor_ref(key)
+    }
 }
 
 impl StreamCipher for [u8] {
@@ -37,7 +37,20 @@ impl StreamCipher for [u8] {
     where
         I: Iterator<Item = u8> + Clone,
     {
-        xor_internal(self.iter(), key)
+        self.iter()
+            .zip(key.cycle())
+            .map(|(plain_byte, key_byte)| plain_byte ^ key_byte)
+            .collect()
+    }
+
+    fn xor_ref<'a, I>(&self, key: I) -> Vec<u8>
+    where
+        I: Iterator<Item = &'a u8> + Clone,
+    {
+        self.iter()
+            .zip(key.cycle())
+            .map(|(plain_byte, key_byte)| plain_byte ^ key_byte)
+            .collect()
     }
 }
 

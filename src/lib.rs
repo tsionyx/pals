@@ -225,45 +225,48 @@ pub fn hamming(lhs: impl AsRef<[u8]>, rhs: impl AsRef<[u8]>) -> u32 {
 pub mod aes_cypher {
     use aes::{cipher::generic_array::GenericArray, Aes128, BlockCipher, NewBlockCipher};
 
-    use super::StreamCipher;
+    use super::{BytesCryptoExt, StreamCipher};
 
-    macro_rules! enc_dec {
-        ($func_name:ident, $direction:ident) => {
-            pub fn $func_name<'a, 'b>(
-                data: &'a [u8],
-                key: &'b [u8],
-            ) -> impl Iterator<Item = Vec<u8>> + 'a {
-                let key = GenericArray::from_slice(key);
-                let cipher = Aes128::new(key);
-
-                data.chunks(16).map(move |block| {
-                    let mut block = GenericArray::clone_from_slice(block);
-                    cipher.$direction(&mut block);
-                    block.to_vec()
-                })
-            }
-        };
-    }
-
-    enc_dec!(encrypt, encrypt_block);
-    enc_dec!(decrypt, decrypt_block);
-
-    pub fn encrypt_cbc<'a, 'b>(
-        data: &'a [u8],
-        key: &'b [u8],
-        iv: Vec<u8>,
-    ) -> impl Iterator<Item = Vec<u8>> + 'a {
+    pub fn encrypt(mut data: Vec<u8>, key: &[u8]) -> Vec<Vec<u8>> {
         let key = GenericArray::from_slice(key);
         let cipher = Aes128::new(key);
 
-        data.chunks(16).scan(iv, move |prev_block, block| {
-            // mix with the previous block
-            let block = block.xor_ref(prev_block.iter());
-            let mut block = GenericArray::clone_from_slice(&block);
-            cipher.encrypt_block(&mut block);
-            *prev_block = block.to_vec();
-            Some(prev_block.clone())
+        data.pad_pkcs7(16);
+        data.chunks(16)
+            .map(move |block| {
+                let mut block = GenericArray::clone_from_slice(block);
+                cipher.encrypt_block(&mut block);
+                block.to_vec()
+            })
+            .collect()
+    }
+
+    pub fn decrypt<'a, 'b>(data: &'a [u8], key: &'b [u8]) -> impl Iterator<Item = Vec<u8>> + 'a {
+        let key = GenericArray::from_slice(key);
+        let cipher = Aes128::new(key);
+
+        data.chunks(16).map(move |block| {
+            let mut block = GenericArray::clone_from_slice(block);
+            cipher.decrypt_block(&mut block);
+            block.to_vec()
         })
+    }
+
+    pub fn encrypt_cbc(mut data: Vec<u8>, key: &[u8], iv: Vec<u8>) -> Vec<Vec<u8>> {
+        let key = GenericArray::from_slice(key);
+        let cipher = Aes128::new(key);
+
+        data.pad_pkcs7(16);
+        data.chunks(16)
+            .scan(iv, move |prev_block, block| {
+                // mix with the previous block
+                let block = block.xor_ref(prev_block.iter());
+                let mut block = GenericArray::clone_from_slice(&block);
+                cipher.encrypt_block(&mut block);
+                *prev_block = block.to_vec();
+                Some(prev_block.clone())
+            })
+            .collect()
     }
 
     pub fn decrypt_cbc<'a, 'b>(

@@ -3,6 +3,7 @@
 use std::iter;
 
 use itertools::Itertools;
+use rand::Rng;
 
 pub mod freq;
 
@@ -135,6 +136,8 @@ pub trait BytesCryptoExt {
     fn find_key_char(&self) -> Result<u8, String>;
 
     fn pad_pkcs7(&mut self, block_size: u8);
+
+    fn generate_random(count: usize) -> Self;
 }
 
 impl BytesCryptoExt for Vec<u8> {
@@ -211,6 +214,11 @@ impl BytesCryptoExt for Vec<u8> {
         #[allow(clippy::cast_possible_truncation)]
         let padding = iter::repeat(to_pad as u8).take(to_pad);
         self.extend(padding);
+    }
+
+    fn generate_random(count: usize) -> Self {
+        let mut rng = rand::thread_rng();
+        (0..count).map(|_| rng.gen()).collect()
     }
 }
 

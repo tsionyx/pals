@@ -298,6 +298,32 @@ pub mod aes_cypher {
     }
 }
 
+pub fn detect_block_size<Enc>(f: Enc) -> (usize, usize)
+where
+    Enc: Fn(&[u8]) -> Vec<u8>,
+{
+    let empty_enc_size: usize = f(&[]).len();
+    eprintln!("Empty payload ciphertext size: {}", empty_enc_size);
+
+    for i in 1.. {
+        let payload: Vec<_> = iter::repeat(b'A').take(i).collect();
+        let enc_size: usize = f(&payload).len();
+        eprintln!(
+            "The size of the ciphertext of the payload {:?} is {}",
+            payload, enc_size,
+        );
+
+        let diff = enc_size - empty_enc_size;
+
+        if diff != 0 {
+            let suffix_size = empty_enc_size - i;
+            return (diff, suffix_size);
+        }
+    }
+
+    unreachable!("The block size will be revealed eventually")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

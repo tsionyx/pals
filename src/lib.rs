@@ -58,6 +58,7 @@ impl StreamCipher for [u8] {
 pub trait StrCryptoExt {
     fn parse_hex(&self) -> Vec<u8>;
     fn is_printable_ascii(&self) -> bool;
+    fn strip_pkcs7_padding(&self, block_size: u8) -> Option<String>;
 }
 
 impl StrCryptoExt for str {
@@ -80,6 +81,14 @@ impl StrCryptoExt for str {
     fn is_printable_ascii(&self) -> bool {
         self.chars()
             .all(|ch| ch.is_ascii_whitespace() || !ch.is_ascii_control())
+    }
+
+    fn strip_pkcs7_padding(&self, block_size: u8) -> Option<String> {
+        let mut bytes: Vec<_> = self.bytes().collect();
+        let _padding_size = bytes.pkcs7_padding_size(block_size)?;
+
+        bytes.unpad_pkcs7(block_size);
+        String::from_utf8(bytes).ok()
     }
 }
 
@@ -136,6 +145,7 @@ pub trait BytesCryptoExt {
     fn find_key_char(&self) -> Result<u8, String>;
 
     fn pad_pkcs7(&mut self, block_size: u8);
+    fn pkcs7_padding_size(&self, block_size: u8) -> Option<usize>;
     fn unpad_pkcs7(&mut self, block_size: u8);
 
     fn generate_random(count: usize) -> Self;
@@ -217,19 +227,31 @@ impl BytesCryptoExt for Vec<u8> {
         self.extend(padding);
     }
 
-    fn unpad_pkcs7(&mut self, block_size: u8) {
+    fn pkcs7_padding_size(&self, block_size: u8) -> Option<usize> {
         if self.is_empty() {
-            return;
+            return None;
         }
 
-        if block_size < 2 {
-            return;
+        if block_size < 1 {
+            return None;
         }
 
         let last_byte = *self.last().unwrap();
+        if last_byte > block_size {
+            return None;
+        }
+
         let unpad_bytes = last_byte as usize;
         let padding: Vec<_> = self.iter().rev().take(unpad_bytes).collect();
         if padding == vec![&last_byte; unpad_bytes] {
+            return Some(unpad_bytes);
+        }
+
+        None
+    }
+
+    fn unpad_pkcs7(&mut self, block_size: u8) {
+        if let Some(unpad_bytes) = self.pkcs7_padding_size(block_size) {
             self.truncate(self.len() - unpad_bytes)
         }
     }
@@ -376,5 +398,53 @@ mod tests {
         v.pad_pkcs7(6);
 
         assert_eq!(v, vec![5, 32, 16, 0, 4, 1, 6, 6, 6, 6, 6, 6]);
+    }
+
+    #[test]
+    fn empty_string_has_no_padding() {
+        let v = vec![];
+        for block_size in 0..=16 {
+            assert_eq!(v.pkcs7_padding_size(block_size), None);
+        }
+    }
+
+    #[test]
+    fn no_valid_padding_for_zero_block_size() {
+        for byte in 0..=16 {
+            let v = vec![byte];
+            assert_eq!(v.pkcs7_padding_size(0), None);
+        }
+    }
+
+    #[test]
+    fn the_only_valid_padding_for_stream() {
+        let v = vec![1];
+        assert_eq!(v.pkcs7_padding_size(1), Some(1));
+
+        for byte in 2..=16 {
+            let v = vec![byte];
+            assert_eq!(v.pkcs7_padding_size(1), None);
+        }
+    }
+
+    #[test]
+    fn not_enough_bytes_padding() {
+        // https://cryptopals.com/sets/2/challenges/15
+        let s = "ICE ICE BABY\u{05}\u{05}\u{05}\u{05}";
+        assert_eq!(s.strip_pkcs7_padding(8), None);
+    }
+
+    #[test]
+    fn bad_bytes_padding() {
+        // https://cryptopals.com/sets/2/challenges/15
+        let s = "ICE ICE BABY\u{01}\u{02}\u{03}\u{04}";
+        assert_eq!(s.strip_pkcs7_padding(16), None);
+    }
+
+    #[test]
+    fn good_padding() {
+        // https://cryptopals.com/sets/2/challenges/15
+        let s = "ICE ICE BABY\u{05}\u{05}\u{05}\u{05}\u{05}";
+        assert_eq!(s.strip_pkcs7_padding(8).unwrap(), "ICE ICE BABY");
     }
 }

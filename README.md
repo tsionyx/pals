@@ -1,7 +1,7 @@
-# Solutions for the problems of the https://cryptopals.com/
+# https://cryptopals.com/ challenges
 
 
-## Example
+## Run examples
 
 ```
 cargo run --bin ch1_1

@@ -29,8 +29,6 @@ YnkK"#;
 }
 
 mod breaking {
-    use std::iter;
-
     use pals::detect_block_size;
 
     use super::blackbox::encrypt;
@@ -86,7 +84,7 @@ mod breaking {
                 byte_number, byte_offset, block_number
             );
             let one_byte_shorter = block_size - byte_offset - 1;
-            let short_payload: Vec<_> = iter::repeat(b'A').take(one_byte_shorter).collect();
+            let short_payload: Vec<_> = "A".repeat(one_byte_shorter).into_bytes();
 
             let short_template = encrypt(&short_payload);
             let short_block = &short_template[block_number];
@@ -96,7 +94,7 @@ mod breaking {
             );
 
             let brute_force_payload = if block_number == 0 {
-                let mut payload = short_payload.clone();
+                let mut payload = short_payload;
                 payload.extend_from_slice(&result[..byte_number]);
                 payload
             } else {

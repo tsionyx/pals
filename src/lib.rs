@@ -393,7 +393,7 @@ mod tests {
     }
 
     #[test]
-    fn padding_is_mandarory() {
+    fn padding_is_mandatory() {
         let mut v = vec![5_u8, 32, 16, 0, 4, 1];
         v.pad_pkcs7(6);
 

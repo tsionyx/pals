@@ -1,5 +1,3 @@
-use std::iter;
-
 use self::blackbox::Profile;
 use pals::BytesCryptoExt;
 
@@ -143,7 +141,7 @@ fn elevate_privileges() -> Profile {
     let email_prefix = "email=";
     let email_suffix_in_block = "@acme.";
     let fill_in = block_size - email_prefix.len() - email_suffix_in_block.len();
-    let email_username: String = iter::repeat('x').take(fill_in).collect();
+    let email_username = "x".repeat(fill_in);
 
     // Craft the second block
     // "admin[PADDING_BYTES]"
@@ -161,7 +159,7 @@ fn elevate_privileges() -> Profile {
     //          16
     let mandatory_structure = "&uid=10&role=";
     let email_real_suffix_fill_in = block_size - mandatory_structure.len();
-    let email_real_suffix: String = iter::repeat('c').take(email_real_suffix_fill_in).collect();
+    let email_real_suffix = "c".repeat(email_real_suffix_fill_in);
 
     let email = vec![
         email_username,

@@ -45,7 +45,7 @@ fn decrypt_xor(data: &[u8]) {
 
 fn find_best_key(data: &[u8], key_size: usize) -> Result<Vec<u8>, String> {
     let transposed_blocks =
-        (0..key_size).map(|index| data.iter().skip(index).step_by(key_size).cloned().collect());
+        (0..key_size).map(|index| data.iter().skip(index).step_by(key_size).copied().collect());
 
     transposed_blocks
         .map(|single_char_block: Vec<u8>| single_char_block.find_key_char())

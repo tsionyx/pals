@@ -12,7 +12,7 @@ fn main() {
     let encoded = encode(&raw);
     println!("{}", encoded);
 
-    assert_result(&encoded)
+    assert_result(&encoded);
 }
 
 fn assert_result(result: &str) {

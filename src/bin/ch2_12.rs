@@ -20,7 +20,7 @@ YnkK"#;
         let suffix = base64::decode(base64_ed).unwrap();
         // eprintln!("Unknown suffix is {:?}", suffix);
 
-        let data = data.iter().cloned().chain(suffix).collect();
+        let data = data.iter().copied().chain(suffix).collect();
         // eprintln!(
         //     "Final data to encrypt with the key {:?}: {:?} (size={})",
         //     KEY.as_slice(), data, data.len());

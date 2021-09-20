@@ -461,7 +461,7 @@ mod tests {
                 (prefix_padding_size + prefix_size),
                 prefix_blocks * ebc.block_size
             );
-            assert_eq!(ebc.get_prefix_exact_size(), prefix_size)
+            assert_eq!(ebc.get_prefix_exact_size(), prefix_size);
         }
     }
 }

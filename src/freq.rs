@@ -60,5 +60,5 @@ const LETTER_FREQ: [(char, f64); 26] = [
 ];
 
 pub fn eng_map() -> HashMap<char, f64> {
-    LETTER_FREQ.iter().cloned().collect()
+    LETTER_FREQ.iter().copied().collect()
 }

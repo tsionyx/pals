@@ -252,7 +252,7 @@ impl BytesCryptoExt for Vec<u8> {
 
     fn unpad_pkcs7(&mut self, block_size: u8) {
         if let Some(unpad_bytes) = self.pkcs7_padding_size(block_size) {
-            self.truncate(self.len() - unpad_bytes)
+            self.truncate(self.len() - unpad_bytes);
         }
     }
 

@@ -22,7 +22,7 @@ fn main() {
         let mut data = Vec::new();
         let size_of_data = std::io::stdin().read_to_end(&mut data).unwrap();
         eprintln!("Read {} bytes from stdin", size_of_data);
-        encrypt_xor(&data, KEY, &out_file)
+        encrypt_xor(&data, KEY, &out_file);
     }
 }
 

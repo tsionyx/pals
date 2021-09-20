@@ -5,7 +5,7 @@ use pals::{aes_cypher, BytesCryptoExt};
 fn main() {
     for i in 0..100 {
         println!("{}. ========================", i);
-        detect_mode()
+        detect_mode();
     }
 }
 

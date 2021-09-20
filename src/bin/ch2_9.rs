@@ -9,7 +9,7 @@ fn main() {
     let padded = String::from_utf8(data).unwrap();
     println!("Padded string: {:?}", padded);
 
-    assert_result(&padded)
+    assert_result(&padded);
 }
 
 fn assert_result(result: &str) {
